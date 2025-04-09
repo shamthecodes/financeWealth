@@ -13,8 +13,6 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: "5mb",
     },
-
-    serverComponentsExternalPackages: ["@arcjet/runtime"],
   },
 };
 
