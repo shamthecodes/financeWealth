@@ -1,4 +1,17 @@
 "use client";
+
+import { useState, useMemo } from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -7,19 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { endOfDay, format, startOfDay, subDays } from "date-fns";
-import { enUS } from "date-fns/locale"; // Fixed locale
-import React, { useMemo, useState, useEffect } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 
 const DATE_RANGES = {
   "7D": { label: "Last 7 Days", days: 7 },
@@ -29,13 +29,8 @@ const DATE_RANGES = {
   ALL: { label: "All Time", days: null },
 };
 
-const AccountChart = ({ transactions }) => {
+export function AccountChart({ transactions }) {
   const [dateRange, setDateRange] = useState("1M");
-  const [isClient, setIsClient] = useState(false); // Track client-side rendering
-
-  useEffect(() => {
-    setIsClient(true); // Set to true after component mounts
-  }, []);
 
   const filteredData = useMemo(() => {
     const range = DATE_RANGES[dateRange];
@@ -49,15 +44,12 @@ const AccountChart = ({ transactions }) => {
       (t) => new Date(t.date) >= startDate && new Date(t.date) <= endOfDay(now)
     );
 
+    // Group transactions by date
     const grouped = filtered.reduce((acc, transaction) => {
-      const date = format(new Date(transaction.date), "MMM dd", {
-        locale: enUS, // Use fixed locale
-      });
-
+      const date = format(new Date(transaction.date), "MMM dd");
       if (!acc[date]) {
         acc[date] = { date, income: 0, expense: 0 };
       }
-
       if (transaction.type === "INCOME") {
         acc[date].income += transaction.amount;
       } else {
@@ -66,11 +58,13 @@ const AccountChart = ({ transactions }) => {
       return acc;
     }, {});
 
+    // Convert to array and sort by date
     return Object.values(grouped).sort(
       (a, b) => new Date(a.date) - new Date(b.date)
     );
   }, [transactions, dateRange]);
 
+  // Calculate totals for the selected period
   const totals = useMemo(() => {
     return filteredData.reduce(
       (acc, day) => ({
@@ -80,10 +74,6 @@ const AccountChart = ({ transactions }) => {
       { income: 0, expense: 0 }
     );
   }, [filteredData]);
-
-  if (!isClient) {
-    return <div>Loading...</div>; // Render a fallback until client-side rendering is ready
-  }
 
   return (
     <Card>
@@ -109,13 +99,13 @@ const AccountChart = ({ transactions }) => {
           <div className="text-center">
             <p className="text-muted-foreground">Total Income</p>
             <p className="text-lg font-bold text-green-500">
-              ₹{totals.income.toFixed(2)}
+              ${totals.income.toFixed(2)}
             </p>
           </div>
           <div className="text-center">
             <p className="text-muted-foreground">Total Expenses</p>
             <p className="text-lg font-bold text-red-500">
-              ₹{totals.expense.toFixed(2)}
+              ${totals.expense.toFixed(2)}
             </p>
           </div>
           <div className="text-center">
@@ -127,7 +117,7 @@ const AccountChart = ({ transactions }) => {
                   : "text-red-500"
               }`}
             >
-              ₹{(totals.income - totals.expense).toFixed(2)}
+              ${(totals.income - totals.expense).toFixed(2)}
             </p>
           </div>
         </div>
@@ -135,22 +125,29 @@ const AccountChart = ({ transactions }) => {
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={filteredData}
-              margin={{
-                top: 10,
-                right: 10,
-                left: 10,
-                bottom: 5,
-              }}
+              margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
             >
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="date" />
+              <XAxis
+                dataKey="date"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+              />
               <YAxis
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(value) => `₹${value}`}
+                tickFormatter={(value) => `$${value}`}
               />
-              <Tooltip formatter={(value) => [`₹${value}`, undefined]} />
+              <Tooltip
+                formatter={(value) => [`$${value}`, undefined]}
+                contentStyle={{
+                  backgroundColor: "hsl(var(--popover))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "var(--radius)",
+                }}
+              />
               <Legend />
               <Bar
                 dataKey="income"
@@ -170,6 +167,4 @@ const AccountChart = ({ transactions }) => {
       </CardContent>
     </Card>
   );
-};
-
-export default AccountChart;
+}

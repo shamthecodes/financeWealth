@@ -1,5 +1,17 @@
 "use client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+import { useState } from "react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  Legend,
+} from "recharts";
+import { format } from "date-fns";
+import { ArrowUpRight, ArrowDownRight } from "lucide-react";
+
 import {
   Select,
   SelectContent,
@@ -7,18 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { ArrowDownRight, ArrowUpRight } from "lucide-react";
-import React, { useState } from "react";
-import {
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  Legend,
-} from "recharts";
 
 const COLORS = [
   "#FF6B6B",
@@ -30,7 +32,7 @@ const COLORS = [
   "#9FA8DA",
 ];
 
-const DashboardOverview = ({ accounts, transactions }) => {
+export function DashboardOverview({ accounts, transactions }) {
   const [selectedAccountId, setSelectedAccountId] = useState(
     accounts.find((a) => a.isDefault)?.id || accounts[0]?.id
   );
@@ -40,11 +42,12 @@ const DashboardOverview = ({ accounts, transactions }) => {
     (t) => t.accountId === selectedAccountId
   );
 
+  // Get recent transactions (last 5)
   const recentTransactions = accountTransactions
     .sort((a, b) => new Date(b.date) - new Date(a.date))
     .slice(0, 5);
 
-  // Calculate expenses breakdown for current month
+  // Calculate expense breakdown for current month
   const currentDate = new Date();
   const currentMonthExpenses = accountTransactions.filter((t) => {
     const transactionDate = new Date(t.date);
@@ -55,22 +58,23 @@ const DashboardOverview = ({ accounts, transactions }) => {
     );
   });
 
+  // Group expenses by category
   const expensesByCategory = currentMonthExpenses.reduce((acc, transaction) => {
-    const category = transaction.category || "Uncategorized";
+    const category = transaction.category;
     if (!acc[category]) {
       acc[category] = 0;
     }
-    acc[category] += Number(transaction.amount);
+    acc[category] += transaction.amount;
     return acc;
   }, {});
 
   // Format data for pie chart
-  const pieChartData = Object.entries(expensesByCategory)
-    .map(([name, value]) => ({
-      name,
-      value: Number(value.toFixed(2)),
-    }))
-    .filter((item) => item.value > 0); // Filter out zero values
+  const pieChartData = Object.entries(expensesByCategory).map(
+    ([category, amount]) => ({
+      name: category,
+      value: amount,
+    })
+  );
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -113,7 +117,7 @@ const DashboardOverview = ({ accounts, transactions }) => {
                       {transaction.description || "Untitled Transaction"}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {format(new Date(transaction.date), "MMM dd, yyyy")}
+                      {format(new Date(transaction.date), "PP")}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -130,7 +134,7 @@ const DashboardOverview = ({ accounts, transactions }) => {
                       ) : (
                         <ArrowUpRight className="mr-1 h-4 w-4" />
                       )}
-                      ₹{transaction.amount.toFixed(2)}
+                      ${transaction.amount.toFixed(2)}
                     </div>
                   </div>
                 </div>
@@ -140,7 +144,7 @@ const DashboardOverview = ({ accounts, transactions }) => {
         </CardContent>
       </Card>
 
-      {/* Monthly Expense Breakdown Card */}
+      {/* Expense Breakdown Card */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base font-normal">
@@ -153,9 +157,7 @@ const DashboardOverview = ({ accounts, transactions }) => {
               No expenses this month
             </p>
           ) : (
-            <div className="h-[300px] w-full">
-              {" "}
-              {/* Fixed dimensions */}
+            <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -163,36 +165,26 @@ const DashboardOverview = ({ accounts, transactions }) => {
                     cx="50%"
                     cy="50%"
                     outerRadius={80}
-                    innerRadius={40}
-                    paddingAngle={2}
+                    fill="#8884d8"
                     dataKey="value"
-                    nameKey="name"
-                    label={({ name, percent }) =>
-                      `${name}: ${(percent * 100).toFixed(0)}%`
-                    }
-                    labelLine={false}
+                    label={({ name, value }) => `${name}: $${value.toFixed(2)}`}
                   >
                     {pieChartData.map((entry, index) => (
                       <Cell
                         key={`cell-${index}`}
                         fill={COLORS[index % COLORS.length]}
-                        stroke="#ffffff"
-                        strokeWidth={1}
                       />
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value, name, props) => [
-                      `₹${value.toFixed(2)}`,
-                      name,
-                    ]}
+                    formatter={(value) => `$${value.toFixed(2)}`}
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--popover))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "var(--radius)",
+                    }}
                   />
-                  <Legend
-                    layout="horizontal"
-                    verticalAlign="bottom"
-                    align="center"
-                    wrapperStyle={{ paddingTop: "20px" }}
-                  />
+                  <Legend />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -201,6 +193,4 @@ const DashboardOverview = ({ accounts, transactions }) => {
       </Card>
     </div>
   );
-};
-
-export default DashboardOverview;
+}

@@ -1,13 +1,14 @@
 "use client";
-import { scanReceipt } from "@/actions/transaction";
-import { Button } from "@/components/ui/button";
-import useFetch from "@/hooks/use-fetch";
-import { Camera, Loader2 } from "lucide-react";
-import React, { useEffect, useRef } from "react";
-import { toast } from "sonner";
 
-const ReciptScanner = ({ onScanComplete }) => {
-  const fileInputRef = useRef();
+import { useRef, useEffect } from "react";
+import { Camera, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import useFetch from "@/hooks/use-fetch";
+import { scanReceipt } from "@/actions/transaction";
+
+export function ReceiptScanner({ onScanComplete }) {
+  const fileInputRef = useRef(null);
 
   const {
     loading: scanReceiptLoading,
@@ -32,7 +33,7 @@ const ReciptScanner = ({ onScanComplete }) => {
   }, [scanReceiptLoading, scannedData]);
 
   return (
-    <div>
+    <div className="flex items-center gap-4">
       <input
         type="file"
         ref={fileInputRef}
@@ -44,7 +45,6 @@ const ReciptScanner = ({ onScanComplete }) => {
           if (file) handleReceiptScan(file);
         }}
       />
-
       <Button
         type="button"
         variant="outline"
@@ -60,12 +60,10 @@ const ReciptScanner = ({ onScanComplete }) => {
         ) : (
           <>
             <Camera className="mr-2" />
-            <span>Scan Recipt with AI</span>
+            <span>Scan Receipt with AI</span>
           </>
         )}
       </Button>
     </div>
   );
-};
-
-export default ReciptScanner;
+}

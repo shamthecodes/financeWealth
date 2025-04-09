@@ -1,3 +1,5 @@
+"use server";
+
 import { Resend } from "resend";
 
 export async function sendEmail({ to, subject, react }) {
@@ -10,6 +12,7 @@ export async function sendEmail({ to, subject, react }) {
       subject,
       react,
     });
+
     return { success: true, data };
   } catch (error) {
     console.error("Failed to send email:", error);
